@@ -15,6 +15,11 @@
     return a >= filterNum && b >= filterNum
   }
 
+  // Reactive set so the grid re-renders when filter changes
+  $: excludedCells = new Set(
+    nums.flatMap(a => nums.filter(b => !inRange(a, b)).map(b => `${a},${b}`))
+  )
+
   function rangeLabel(num, mode) {
     if (mode === 'upper') return `1 – ${num}`
     return `${num} – 12`
@@ -182,7 +187,7 @@
               {#each nums as b}
                 {@const isDone = completed.has(`${a},${b}`)}
                 {@const isCurrent = !isDone && card.a === a && card.b === b}
-                {@const isExcluded = !inRange(a, b)}
+                {@const isExcluded = excludedCells.has(`${a},${b}`)}
                 <div class="g-cell" class:done={isDone} class:current={isCurrent} class:excluded={isExcluded}>
                   {#if !isExcluded}{isCurrent ? '?' : a * b}{/if}
                 </div>
