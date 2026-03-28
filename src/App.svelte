@@ -1,11 +1,53 @@
 <script>
   const nums = Array.from({ length: 12 }, (_, i) => i + 1)
 
+  // Filter state (applied values)
+  let filterNum = 12
+  let filterMode = 'upper' // 'upper' = 1..N, 'lower' = N..12
+
+  // Modal draft state
+  let showSettings = false
+  let draftNum = 12
+  let draftMode = 'upper'
+
+  function inRange(a, b) {
+    if (filterMode === 'upper') return a <= filterNum && b <= filterNum
+    return a >= filterNum && b >= filterNum
+  }
+
+  function rangeLabel(num, mode) {
+    if (mode === 'upper') return `1 – ${num}`
+    return `${num} – 12`
+  }
+
+  function rangeCount(num, mode) {
+    if (mode === 'upper') return num * num
+    return (13 - num) * (13 - num)
+  }
+
+  function openSettings() {
+    draftNum = filterNum
+    draftMode = filterMode
+    showSettings = true
+  }
+
+  function cancelSettings() {
+    showSettings = false
+  }
+
+  function applySettings() {
+    filterNum = draftNum
+    filterMode = draftMode
+    showSettings = false
+    init()
+  }
+
   function generateCards() {
     const cards = []
     for (let a = 1; a <= 12; a++)
       for (let b = 1; b <= 12; b++)
-        cards.push({ a, b, answer: a * b })
+        if (inRange(a, b))
+          cards.push({ a, b, answer: a * b })
     for (let i = cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[cards[i], cards[j]] = [cards[j], cards[i]]
@@ -78,13 +120,21 @@
   <div class="app">
     <header class="app-header">
       <span class="app-title">MathFlow</span>
-      <span class="progress-badge">{completed.size} / 144</span>
+      <div class="header-right">
+        <span class="progress-badge">{completed.size} / {cards.length}</span>
+        <button class="settings-btn" on:click={openSettings} aria-label="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <main class="content">
       <div class="section-label">
         <div class="challenge-title">Daily Challenge</div>
-        <div class="challenge-sub">Times tables 1–12</div>
+        <div class="challenge-sub">Times tables {rangeLabel(filterNum, filterMode)}</div>
       </div>
 
       <div class="flashcard">
@@ -132,8 +182,9 @@
               {#each nums as b}
                 {@const isDone = completed.has(`${a},${b}`)}
                 {@const isCurrent = !isDone && card.a === a && card.b === b}
-                <div class="g-cell" class:done={isDone} class:current={isCurrent}>
-                  {isCurrent ? '?' : a * b}
+                {@const isExcluded = !inRange(a, b)}
+                <div class="g-cell" class:done={isDone} class:current={isCurrent} class:excluded={isExcluded}>
+                  {#if !isExcluded}{isCurrent ? '?' : a * b}{/if}
                 </div>
               {/each}
             {/each}
@@ -143,11 +194,65 @@
     </main>
   </div>
 
-{:else}
+{/if}
+
+{#if showSettings}
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div class="modal-overlay" on:click|self={cancelSettings}>
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Settings</h2>
+        <button class="modal-close" on:click={cancelSettings} aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">Filter number (1–12)</div>
+        <div class="num-picker">
+          {#each nums as n}
+            <button
+              class="num-btn"
+              class:active={draftNum === n}
+              on:click={() => draftNum = n}
+            >{n}</button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-label">Range direction</div>
+        <div class="mode-toggle">
+          <button
+            class="mode-btn"
+            class:active={draftMode === 'upper'}
+            on:click={() => draftMode = 'upper'}
+          >Upper limit<span class="mode-sub">1 to {draftNum}</span></button>
+          <button
+            class="mode-btn"
+            class:active={draftMode === 'lower'}
+            on:click={() => draftMode = 'lower'}
+          >Lower limit<span class="mode-sub">{draftNum} to 12</span></button>
+        </div>
+        <p class="modal-desc">
+          {#if draftMode === 'upper'}
+            Questions will use numbers <strong>1–{draftNum}</strong> · {rangeCount(draftNum, draftMode)} problems
+          {:else}
+            Questions will use numbers <strong>{draftNum}–12</strong> · {rangeCount(draftNum, draftMode)} problems
+          {/if}
+        </p>
+      </div>
+
+      <button class="apply-btn" on:click={applySettings}>Apply &amp; Close</button>
+    </div>
+  </div>
+{/if}
+
+{#if screen === 'done' && !showSettings}
   <div class="done-screen">
     <div class="trophy">🎉</div>
     <h1>Congratulations!</h1>
-    <p>You completed all 144 multiplication problems!</p>
+    <p>You completed all {cards.length} multiplication problems!</p>
     <button class="reset-btn" on:click={init}>Try Again?</button>
   </div>
 {/if}
@@ -195,6 +300,12 @@
     letter-spacing: -0.02em;
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
   .progress-badge {
     background: #eef1f6;
     color: #6b7a9a;
@@ -202,6 +313,26 @@
     font-weight: 600;
     padding: 0.3rem 0.75rem;
     border-radius: 1rem;
+  }
+
+  .settings-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef1f6;
+    color: #6b7a9a;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .settings-btn:hover {
+    background: #dbeafe;
+    color: #2563eb;
   }
 
   /* ── Main content ── */
@@ -426,6 +557,178 @@
   .g-cell.done {
     background: #dcfce7;
     color: #16a34a;
+  }
+
+  .g-cell.excluded {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* ── Settings modal ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    padding: 0 0 env(safe-area-inset-bottom, 0);
+  }
+
+  .modal {
+    background: white;
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 1.5rem 1.5rem 2rem;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #1a2b4a;
+  }
+
+  .modal-close {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef1f6;
+    color: #6b7a9a;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .modal-close:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .modal-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #6b7a9a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Number picker row */
+  .num-picker {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .num-btn {
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: #f1f4f9;
+    color: #6b7a9a;
+    border: 2px solid transparent;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+
+  .num-btn.active {
+    background: #dbeafe;
+    color: #2563eb;
+    border-color: #93c5fd;
+  }
+
+  .num-btn:hover:not(.active) {
+    background: #e2e8f4;
+  }
+
+  /* Upper/lower toggle */
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .mode-btn {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    background: #f1f4f9;
+    color: #6b7a9a;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+
+  .mode-btn.active {
+    background: #dbeafe;
+    color: #2563eb;
+    border-color: #93c5fd;
+  }
+
+  .mode-btn:hover:not(.active) {
+    background: #e2e8f4;
+  }
+
+  .mode-sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    opacity: 0.75;
+  }
+
+  .modal-desc {
+    font-size: 0.82rem;
+    color: #6b7a9a;
+    line-height: 1.5;
+  }
+
+  .modal-desc strong {
+    color: #2563eb;
+  }
+
+  .apply-btn {
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 1.25rem;
+    cursor: pointer;
+    transition: opacity 0.12s, transform 0.08s;
+  }
+
+  .apply-btn:active {
+    opacity: 0.88;
+    transform: scale(0.98);
   }
 
   /* ── Done screen ── */
