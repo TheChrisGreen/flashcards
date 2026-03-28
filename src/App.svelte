@@ -93,6 +93,57 @@
     return options
   }
 
+  function runConfetti(canvas) {
+    const ctx = canvas.getContext('2d')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const colors = ['#2563eb', '#16a34a', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444']
+    const particles = Array.from({ length: 160 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * -canvas.height,
+      w: Math.random() * 10 + 6,
+      h: Math.random() * 5 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.15,
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: Math.random() * 2.5 + 1.5,
+      opacity: 1
+    }))
+
+    const duration = 5000
+    const start = Date.now()
+    let animId
+
+    function draw() {
+      const elapsed = Date.now() - start
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      for (const p of particles) {
+        p.x += p.vx
+        p.y += p.vy
+        p.rotation += p.rotSpeed
+        p.opacity = elapsed > duration - 1200 ? Math.max(0, (duration - elapsed) / 1200) : 1
+        if (p.y > canvas.height) { p.y = -p.h; p.x = Math.random() * canvas.width }
+
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.rotation)
+        ctx.globalAlpha = p.opacity
+        ctx.fillStyle = p.color
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
+        ctx.restore()
+      }
+
+      if (elapsed < duration) animId = requestAnimationFrame(draw)
+      else ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+
+    animId = requestAnimationFrame(draw)
+    return { destroy() { cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvas.width, canvas.height) } }
+  }
+
   let cards, index, answered, wrongClicks, completed, screen, choices
 
   function init() {
@@ -275,6 +326,7 @@
 {/if}
 
 {#if screen === 'done' && !showSettings}
+  <canvas use:runConfetti class="confetti-canvas"></canvas>
   <div class="done-screen">
     <div class="trophy">🎉</div>
     <h1>Congratulations!</h1>
@@ -757,6 +809,16 @@
     transform: scale(0.98);
   }
 
+  /* ── Confetti canvas ── */
+  .confetti-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 40;
+  }
+
   /* ── Done screen ── */
   .done-screen {
     display: flex;
@@ -768,6 +830,8 @@
     padding: 2rem;
     text-align: center;
     background: #eef1f6;
+    position: relative;
+    z-index: 50;
   }
 
   .trophy {
