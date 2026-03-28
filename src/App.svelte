@@ -189,7 +189,7 @@
 {#if screen === 'quiz'}
   <div class="app">
     <header class="app-header">
-      <span class="app-title">MathFlow</span>
+      <span class="app-title">FlashMath</span>
       <div class="header-right">
         <span class="progress-badge">{completed.size} / {cards.length}</span>
         <button class="settings-btn" on:click={openSettings} aria-label="Settings">
