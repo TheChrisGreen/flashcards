@@ -3,7 +3,7 @@
 
   // Filter state (applied values)
   let filterNum = 12
-  let filterMode = 'upper' // 'upper' = 1..N, 'lower' = N..12
+  let filterMode = 'upper' // 'upper' = 1..N, 'lower' = N..12, 'only' = ×N only
 
   // Modal draft state
   let showSettings = false
@@ -12,7 +12,8 @@
 
   function inRange(a, b) {
     if (filterMode === 'upper') return a <= filterNum && b <= filterNum
-    return a >= filterNum && b >= filterNum
+    if (filterMode === 'lower') return a >= filterNum && b >= filterNum
+    return a === filterNum || b === filterNum
   }
 
   // Reactive set — filterNum and filterMode must be referenced directly
@@ -20,20 +21,27 @@
   $: excludedCells = (() => {
     const s = new Set()
     for (const a of nums)
-      for (const b of nums)
-        if (filterMode === 'upper' ? (a > filterNum || b > filterNum) : (a < filterNum || b < filterNum))
-          s.add(`${a},${b}`)
+      for (const b of nums) {
+        const included = filterMode === 'upper'
+          ? (a <= filterNum && b <= filterNum)
+          : filterMode === 'lower'
+            ? (a >= filterNum && b >= filterNum)
+            : (a === filterNum || b === filterNum)
+        if (!included) s.add(`${a},${b}`)
+      }
     return s
   })()
 
   function rangeLabel(num, mode) {
     if (mode === 'upper') return `1 – ${num}`
-    return `${num} – 12`
+    if (mode === 'lower') return `${num} – 12`
+    return `${num} times table`
   }
 
   function rangeCount(num, mode) {
     if (mode === 'upper') return num * num
-    return (13 - num) * (13 - num)
+    if (mode === 'lower') return (13 - num) * (13 - num)
+    return 23 // 12 + 12 - 1 (row + column – corner)
   }
 
   function openSettings() {
@@ -232,7 +240,7 @@
       </div>
 
       <div class="modal-section">
-        <div class="modal-label">Range direction</div>
+        <div class="modal-label">Mode</div>
         <div class="mode-toggle">
           <button
             class="mode-btn"
@@ -244,12 +252,19 @@
             class:active={draftMode === 'lower'}
             on:click={() => draftMode = 'lower'}
           >Lower limit<span class="mode-sub">{draftNum} to 12</span></button>
+          <button
+            class="mode-btn"
+            class:active={draftMode === 'only'}
+            on:click={() => draftMode = 'only'}
+          >Only<span class="mode-sub">× {draftNum}</span></button>
         </div>
         <p class="modal-desc">
           {#if draftMode === 'upper'}
-            Questions will use numbers <strong>1–{draftNum}</strong> · {rangeCount(draftNum, draftMode)} problems
+            Questions use numbers <strong>1–{draftNum}</strong> · {rangeCount(draftNum, draftMode)} problems
+          {:else if draftMode === 'lower'}
+            Questions use numbers <strong>{draftNum}–12</strong> · {rangeCount(draftNum, draftMode)} problems
           {:else}
-            Questions will use numbers <strong>{draftNum}–12</strong> · {rangeCount(draftNum, draftMode)} problems
+            Only the <strong>{draftNum} times table</strong> · {rangeCount(draftNum, draftMode)} problems
           {/if}
         </p>
       </div>
@@ -679,7 +694,7 @@
   /* Upper/lower toggle */
   .mode-toggle {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0.6rem;
   }
 
