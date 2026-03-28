@@ -15,10 +15,16 @@
     return a >= filterNum && b >= filterNum
   }
 
-  // Reactive set so the grid re-renders when filter changes
-  $: excludedCells = new Set(
-    nums.flatMap(a => nums.filter(b => !inRange(a, b)).map(b => `${a},${b}`))
-  )
+  // Reactive set — filterNum and filterMode must be referenced directly
+  // so Svelte's compiler detects them as dependencies
+  $: excludedCells = (() => {
+    const s = new Set()
+    for (const a of nums)
+      for (const b of nums)
+        if (filterMode === 'upper' ? (a > filterNum || b > filterNum) : (a < filterNum || b < filterNum))
+          s.add(`${a},${b}`)
+    return s
+  })()
 
   function rangeLabel(num, mode) {
     if (mode === 'upper') return `1 – ${num}`
