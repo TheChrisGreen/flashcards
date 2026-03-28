@@ -816,7 +816,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 40;
+    z-index: 60;
   }
 
   /* ── Done screen ── */
