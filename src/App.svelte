@@ -570,16 +570,16 @@
     inset: 0;
     background: rgba(15, 23, 42, 0.45);
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
     z-index: 100;
-    padding: 0 0 env(safe-area-inset-bottom, 0);
+    padding: 1rem;
   }
 
   .modal {
     background: white;
-    border-radius: 1.5rem 1.5rem 0 0;
-    padding: 1.5rem 1.5rem 2rem;
+    border-radius: 1.5rem;
+    padding: 1.5rem 1.5rem 1.75rem;
     width: 100%;
     max-width: 480px;
     display: flex;
