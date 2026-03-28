@@ -98,22 +98,25 @@
           </span>
         </div>
 
-        {#if answered}
-          <button class="next-btn" on:click={next}>Next →</button>
-        {:else}
-          <div class="choices">
+        <div class="answer-area">
+          <div class="choices" class:faded={answered}>
             {#each choices as choice, i}
               <button
                 class="choice-btn"
                 class:wrong={wrongClicks.has(i)}
-                disabled={wrongClicks.has(i)}
+                disabled={answered || wrongClicks.has(i)}
                 on:click={() => selectChoice(i)}
               >
                 {choice}
               </button>
             {/each}
           </div>
-        {/if}
+          {#if answered}
+            <div class="next-overlay">
+              <button class="next-btn" on:click={next}>Next →</button>
+            </div>
+          {/if}
+        </div>
       </div>
 
       <div class="grid-section">
@@ -276,11 +279,22 @@
     color: #16a34a;
   }
 
+  /* ── Answer area (fixed height wrapper) ── */
+  .answer-area {
+    position: relative;
+  }
+
   /* ── Choice buttons ── */
   .choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+    transition: opacity 0.15s;
+  }
+
+  .choices.faded {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .choice-btn {
@@ -313,9 +327,17 @@
     opacity: 0.75;
   }
 
-  /* ── Next button ── */
+  /* ── Next button (overlaid over the hidden choices) ── */
+  .next-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+  }
+
   .next-btn {
     width: 100%;
+    height: 100%;
     padding: 1rem;
     font-size: 1.1rem;
     font-weight: 700;
@@ -343,28 +365,25 @@
   }
 
   .grid-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100%;
   }
 
   .mastery-grid {
-    display: inline-grid;
-    grid-template-columns: 22px repeat(12, 27px);
+    display: grid;
+    grid-template-columns: 28px repeat(12, 1fr);
     gap: 3px;
     padding: 0.75rem;
     background: white;
     border-radius: 1.25rem;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    min-width: max-content;
+    width: 100%;
   }
 
   .g-corner {
-    width: 22px;
     height: 22px;
   }
 
   .g-header {
-    width: 27px;
     height: 22px;
     display: flex;
     align-items: center;
@@ -375,7 +394,6 @@
   }
 
   .g-row-header {
-    width: 22px;
     height: 27px;
     display: flex;
     align-items: center;
@@ -386,7 +404,6 @@
   }
 
   .g-cell {
-    width: 27px;
     height: 27px;
     display: flex;
     align-items: center;
@@ -397,6 +414,7 @@
     background: #f1f4f9;
     color: #b0bdd0;
     transition: background 0.2s, color 0.2s;
+    min-width: 0;
   }
 
   .g-cell.current {
